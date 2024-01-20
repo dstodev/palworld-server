@@ -94,7 +94,7 @@ if $update_server; then
 	# links FROM the host TO the volume
 	echo Linking host files to volume...
 	mkdir --parents "$mount_dir/server"
-	ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
+	sudo ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
 
 	# links FROM the volume TO the host
 	echo Linking volume files to host...
