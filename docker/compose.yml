@@ -1,0 +1,36 @@
+version: '3.9'
+
+volumes:
+  palworld-server-files:
+
+
+services:
+  server-files:
+    image: steamcmd/steamcmd:ubuntu
+    volumes:
+      - palworld-server-files:/server-files/
+    entrypoint: [ '/bin/bash', '-ec' ]
+    command:
+      - |
+        # Install & update official server files
+        steamcmd \
+          +force_install_dir /server-files/ \
+          +login anonymous \
+          +app_update 2394010 validate \
+          +quit
+
+  palworld-server:
+    build: .
+    image: palworld-server:1.0
+    container_name: palworld-server
+    entrypoint: [ '/server-files/server/start.sh' ]
+    ports:
+      - 8221:8221/udp # Game
+    volumes:
+      - palworld-server-files:/server-files/
+
+  cmd:
+    image: ubuntu:latest
+    entrypoint: [ '/bin/bash', '-ec' ]
+    volumes:
+      - palworld-server-files:/server-files/
