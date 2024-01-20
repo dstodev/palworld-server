@@ -62,9 +62,6 @@ fi
 compose=(docker compose -f "$compose_yml")
 
 if $update_server; then
-	echo Updating server...
-	"${compose[@]}" run --rm server-files
-
 	# If there is no server group, create it.
 	if [ ! "$(getent group "$server_group_name")" ]; then
 		echo Creating group: "$server_group_name"
@@ -83,17 +80,24 @@ if $update_server; then
 		sudo usermod -aG "$server_group_name" "$(id --user --name)"
 	fi
 
+	echo Updating server...
+	"${compose[@]}" run --rm server-files
+
 	mount_dir="$("$script_dir/cd-mountpoint.sh" --path)"
+
+	echo Fixing file permissions...
+	sudo chown --recursive "$server_user_name:$server_group_name" "$mount_dir"
+	sudo chmod --recursive g+w,g+s "$mount_dir"  # required for mkdir later
+	sudo chown --recursive "$server_user_name:$server_group_name" "$source_dir/cfg/"
+
+	# links FROM the host TO the volume
+	echo Linking host files to volume...
+	mkdir --parents "$mount_dir/server"
+	ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
 
 	# links FROM the volume TO the host
 	echo Linking volume files to host...
 	ln --symbolic --no-dereference --force "$mount_dir" "$source_dir/server-files"
-
-	# links FROM the host TO the volume
-	echo Linking host files to volume...
-	sudo chown --recursive "$server_user_name:$server_group_name" "$source_dir/cfg/"
-	mkdir --parents "$mount_dir/server"
-	ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
 
 	# handle=docker container ls -all --quiet --filter name=server-files
 fi

@@ -13,8 +13,6 @@ services:
     command:
       - |
         # Install & update official server files
-        groupadd --gid $SERVER_GROUP_ID $SERVER_GROUP_NAME
-        useradd --uid $SERVER_USER_ID --gid $SERVER_GROUP_ID --create-home $SERVER_USER_NAME
         steamcmd_cmd=(
           steamcmd
           +force_install_dir /server-files/
@@ -22,7 +20,7 @@ services:
           +app_update 2394010 validate
           +quit
         )
-        su - $SERVER_USER_NAME -c "$${steamcmd_cmd[*]}"
+        "$${steamcmd_cmd[@]}"
 
   palworld-server:
     build:
