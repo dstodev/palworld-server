@@ -4,8 +4,17 @@ set -euo pipefail
 # -u : error on unset variable
 # -o pipefail : fail on any error in pipe
 
-export server_user_id=30120
-export server_group_id=30120
+script_dir="$(cd "$(dirname "$0")" && env pwd --physical)"
+source_dir="$script_dir/.."
+docker_dir="$source_dir/docker"
+
+# shellcheck disable=SC2046
+export $(xargs < "$docker_dir/.env")
+
+server_user_id="$SERVER_USER_ID"
+server_user_name="$SERVER_USER_NAME"
+server_group_id="$SERVER_GROUP_ID"
+server_group_name="$SERVER_GROUP_NAME"
 
 help() {
 	cat <<-EOF
@@ -40,10 +49,8 @@ done
 
 update_server=${update_server-false}
 
-script_dir="$(cd "$(dirname "$0")" && env pwd --physical)"
-source_dir="$script_dir/.."
 logs_dir="$source_dir/logs"
-compose_yml=$(readlink --canonicalize "$source_dir/docker/compose.yml")
+compose_yml=$(readlink --canonicalize "$docker_dir/compose.yml")
 
 running_container=$(docker container list --filter name=palworld-server --quiet)
 
@@ -57,24 +64,23 @@ compose=(docker compose -f "$compose_yml")
 if $update_server; then
 	echo Updating server...
 	"${compose[@]}" run --rm server-files
-	"${compose[@]}" run --rm cmd "chown --recursive $server_user_id:$server_group_id /server-files/"
 
 	# If there is no server group, create it.
-	if [ ! "$(getent group server-group)" ]; then
-		echo Creating group: server-group
-		sudo addgroup --gid "$server_group_id" server-group
+	if [ ! "$(getent group "$server_group_name")" ]; then
+		echo Creating group: "$server_group_name"
+		sudo groupadd --gid "$server_group_id" "$server_group_name"
 	fi
 
 	# If there is no server user, create it.
-	if [ ! "$(getent passwd server-user)" ]; then
-		echo Creating user: server-user
-		sudo adduser --uid "$server_user_id" --gid "$server_group_id" --disabled-password --gecos '' server-user
+	if [ ! "$(getent passwd "$server_user_name")" ]; then
+		echo Creating user: "$server_user_name"
+		sudo useradd --uid "$server_user_id" --gid "$server_group_id" "$server_user_name"
 	fi
 
 	# If the host user is not in the server group, add them.
-	if ! id --groups --name | grep --quiet --fixed-strings --word-regexp server-group; then
-		echo "Adding current user $(id --user --name) to group: server-group"
-		sudo usermod -aG server-group "$(id --user --name)"
+	if ! id --groups --name | grep --quiet --fixed-strings --word-regexp "$server_group_name"; then
+		echo "Adding current user $(id --user --name) to group: $server_group_name"
+		sudo usermod -aG "$server_group_name" "$(id --user --name)"
 	fi
 
 	mount_dir="$("$script_dir/cd-mountpoint.sh" --path)"
@@ -85,9 +91,9 @@ if $update_server; then
 
 	# links FROM the host TO the volume
 	echo Linking host files to volume...
-	sudo chown --recursive server-user:server-group "$source_dir/cfg/"
+	sudo chown --recursive "$server_user_name:$server_group_name" "$source_dir/cfg/"
 	mkdir --parents "$mount_dir/server"
-	sudo ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
+	ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
 
 	# handle=docker container ls -all --quiet --filter name=server-files
 fi

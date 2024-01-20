@@ -13,29 +13,39 @@ services:
     command:
       - |
         # Install & update official server files
-        # File permissions are updated in script/start-server.sh
-        steamcmd \
-          +force_install_dir /server-files/ \
-          +login anonymous \
-          +app_update 2394010 validate \
+        groupadd --gid $SERVER_GROUP_ID $SERVER_GROUP_NAME
+        useradd --uid $SERVER_USER_ID --gid $SERVER_GROUP_ID --create-home $SERVER_USER_NAME
+        steamcmd_cmd=(
+          steamcmd
+          +force_install_dir /server-files/
+          +login anonymous
+          +app_update 2394010 validate
           +quit
+        )
+        su - $SERVER_USER_NAME -c "$${steamcmd_cmd[*]}"
 
   palworld-server:
-    build: .
+    build:
+      context: .
+      args:
+        server_port: $SERVER_PORT
+        user_id: $SERVER_USER_ID
+        user_name: $SERVER_USER_NAME
+        group_id: $SERVER_GROUP_ID
+        group_name: $SERVER_GROUP_NAME
+
     image: palworld-server:1.0
     container_name: palworld-server
-    user: "server-user:server-group"
     entrypoint: [ '/server-files/server/start.sh' ]
     ports:
-      - 8211:8211/udp # Game
+      - $SERVER_PORT:$SERVER_PORT/udp
+    user: "$SERVER_USER_NAME:$SERVER_GROUP_NAME"
     volumes:
       - palworld-server-files:/server-files/
 
   cmd:
-    image: ubuntu:latest
+    extends: palworld-server
     entrypoint: [ '/bin/bash', '-ec' ]
-    volumes:
-      - palworld-server-files:/server-files/
 
   backup:
     image: alpine:latest
@@ -46,8 +56,7 @@ services:
     command:
       - |
         server_data_path="/server-files/Pal/Saved"
-
-        # Backup server files using bzip2
         timestamp=$(date +%y-%m-%d-%H-%M-%S)
         backup_path="/backups/backup-$$timestamp.tar.bz2"
+        # Backup server files using bzip2
         tar -cjf "$$backup_path" -C "$$server_data_path" .
