@@ -13,6 +13,7 @@ services:
     command:
       - |
         # Install & update official server files
+        # File permissions are updated in script/start-server.sh
         steamcmd \
           +force_install_dir /server-files/ \
           +login anonymous \
@@ -23,9 +24,10 @@ services:
     build: .
     image: palworld-server:1.0
     container_name: palworld-server
+    user: "server-user:server-group"
     entrypoint: [ '/server-files/server/start.sh' ]
     ports:
-      - 8221:8221/udp # Game
+      - 8211:8211/udp # Game
     volumes:
       - palworld-server-files:/server-files/
 
@@ -34,3 +36,18 @@ services:
     entrypoint: [ '/bin/bash', '-ec' ]
     volumes:
       - palworld-server-files:/server-files/
+
+  backup:
+    image: alpine:latest
+    entrypoint: [ '/bin/sh', '-ec' ]
+    volumes:
+      - palworld-server-files:/server-files/
+      - ../backups:/backups
+    command:
+      - |
+        server_data_path="/server-files/Pal/Saved"
+
+        # Backup server files using bzip2
+        timestamp=$(date +%y-%m-%d-%H-%M-%S)
+        backup_path="/backups/backup-$$timestamp.tar.bz2"
+        tar -cjf "$$backup_path" -C "$$server_data_path" .

@@ -1,4 +1,4 @@
-# Rust server environment
+# Game server environment
 
 ## Requirements
 
@@ -8,7 +8,7 @@
 
 ## Start server
 
-`./script/start-server.sh --update-server`
+`./script/start-server.sh --update`
 
 ## Stop server
 
@@ -44,3 +44,13 @@ save first.
               still running)
   - `CTRL+C` while awaiting log text to stop awaiting & resume navigation
   - `Q` while navigating to exit logfile
+
+## Permissions
+
+Server files are owned by `server-user`:`server-group`. Running
+`./script/start-server.sh --update` will attempt to set up this user
+and group if they do not exist, and will additionally add the current user
+running the script to the `server-group` group.
+
+Changes to the host user's groups will not take effect until e.g. the user
+logs out and back in again.
