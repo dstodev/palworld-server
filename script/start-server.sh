@@ -89,6 +89,7 @@ if $update_server; then
 	sudo chown --recursive "$server_user_name:$server_group_name" "$mount_dir"
 	sudo chmod --recursive g+w,g+s "$mount_dir"  # required for mkdir later
 	sudo chown --recursive "$server_user_name:$server_group_name" "$source_dir/cfg/"
+	sudo chmod --recursive g+w,g+s "$source_dir/cfg/"
 
 	# links FROM the host TO the volume
 	echo Linking host files to volume...
