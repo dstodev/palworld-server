@@ -46,7 +46,12 @@ services:
     entrypoint: [ '/bin/bash', '-ec' ]
 
   backup:
-    image: alpine:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM alpine:latest
+        RUN apk add --no-cache tzdata
+        RUN ln -s /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
     entrypoint: [ '/bin/sh', '-ec' ]
     volumes:
       - palworld-server-files:/server-files/
