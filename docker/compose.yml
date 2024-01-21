@@ -51,6 +51,7 @@ services:
       dockerfile_inline: |
         FROM alpine:latest
         RUN apk add --no-cache tzdata
+        ENV TZ=America/Los_Angeles
         RUN ln -s /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
     entrypoint: [ '/bin/sh', '-ec' ]
     volumes:
