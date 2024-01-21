@@ -50,9 +50,9 @@ services:
       context: .
       dockerfile_inline: |
         FROM alpine:latest
-        RUN apk add --no-cache tzdata
         ENV TZ=America/Los_Angeles
-        RUN ln -s /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+        RUN apk add --no-cache tzdata \
+         && ln -s /usr/share/zoneinfo/$$TZ /etc/localtime
     entrypoint: [ '/bin/sh', '-ec' ]
     volumes:
       - palworld-server-files:/server-files/
