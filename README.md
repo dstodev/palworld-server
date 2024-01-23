@@ -47,10 +47,13 @@ save first.
 
 ## Permissions
 
-Server files are owned by `server-user`:`server-group`. Running
-`./script/start-server.sh --update` will attempt to set up this user
-and group if they do not exist, and will additionally add the current user
-running the script to the `server-group` group.
+Running `./script/start-server.sh --update` will cause:
 
-Changes to the host user's groups will not take effect until e.g. the user
-logs out and back in again.
+- Group `server-group` exists
+- User `server-user` (in group `server-group`) exists
+- Host user added to group `server-group` *
+- Server files owned by `server-group`
+- Repo files owned by `server-group` (for permission to e.g. write backups to `./backups`)
+
+> \* Changes to a user's group membership will not take effect until e.g. the
+> user logs out and back in again.

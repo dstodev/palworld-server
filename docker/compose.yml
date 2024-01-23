@@ -53,14 +53,19 @@ services:
         ENV TZ=America/Los_Angeles
         RUN apk add --no-cache tzdata \
          && ln -s /usr/share/zoneinfo/$$TZ /etc/localtime
+        RUN addgroup --gid $SERVER_GROUP_ID $SERVER_GROUP_NAME \
+         && adduser --disabled-password --gecos "" --uid $SERVER_USER_ID --ingroup $SERVER_GROUP_NAME $SERVER_USER_NAME
     entrypoint: [ '/bin/sh', '-ec' ]
+    user: "$SERVER_USER_NAME:$SERVER_GROUP_NAME"
     volumes:
       - palworld-server-files:/server-files/
       - ../backups:/backups
+    working_dir: /home/$SERVER_USER_NAME
     command:
       - |
         server_data_path="/server-files/Pal/Saved"
-        timestamp=$(date +%y-%m-%d-%H-%M-%S)
+        timestamp=$(date +%Y%j-%H%M%S)
         backup_path="/backups/backup-$$timestamp.tar.bz2"
         # Backup server files using bzip2
-        tar -cjf "$$backup_path" -C "$$server_data_path" .
+        tar -cjf backup.tar.bz2 -C "$$server_data_path" .
+        mv backup.tar.bz2 "$$backup_path"
