@@ -67,8 +67,6 @@ auto constexpr from(PacketType type) -> uint32_t
 
 class Packet
 {
-	friend class RconConnection;
-
 	uint32_t _size;
 	uint32_t _id;
 	uint32_t _type;
@@ -92,9 +90,19 @@ public:
 		return _id;
 	}
 
+	auto type() const -> uint32_t
+	{
+		return _type;
+	}
+
 	void set_type(PacketType type)
 	{
 		_type = from(type);
+	}
+
+	auto body() const -> std::vector<uint8_t> const&
+	{
+		return _body;
 	}
 
 	void set_body(std::string const& body)
@@ -122,6 +130,15 @@ public:
 		buffer.insert(buffer.end(), null_terminators.begin(), null_terminators.end());
 
 		return buffer;
+	}
+
+	void from_byte_buffer(uint8_t const* packet_buffer, ssize_t bytes)
+	{
+		_size = from_little_endian({packet_buffer[0], packet_buffer[1], packet_buffer[2], packet_buffer[3]});
+		_id = from_little_endian({packet_buffer[4], packet_buffer[5], packet_buffer[6], packet_buffer[7]});
+		_type = from_little_endian({packet_buffer[8], packet_buffer[9], packet_buffer[10], packet_buffer[11]});
+		// Skip last two bytes (null terminators)
+		_body = std::vector<uint8_t>(packet_buffer + 12, packet_buffer + bytes - 2);
 	}
 
 private:
@@ -200,9 +217,9 @@ public:
 			success = false;
 		}
 
-		if (success && packet._type != from(PacketType::SERVERDATA_AUTH_RESPONSE)) {
+		if (success && packet.type() != from(PacketType::SERVERDATA_AUTH_RESPONSE)) {
 			std::cout << "Expected packet type SERVERDATA_AUTH_RESPONSE (" << from(PacketType::SERVERDATA_AUTH_RESPONSE)
-			          << ") but got " << packet._type << '\n';
+			          << ") but got " << packet.type() << '\n';
 			success = false;
 		}
 
@@ -233,9 +250,9 @@ public:
 			success = false;
 		}
 
-		if (success && packet._type != from(PacketType::SERVERDATA_RESPONSE_VALUE)) {
+		if (success && packet.type() != from(PacketType::SERVERDATA_RESPONSE_VALUE)) {
 			std::cout << "Expected packet type SERVERDATA_RESPONSE_VALUE ("
-			          << from(PacketType::SERVERDATA_RESPONSE_VALUE) << ") but got " << packet._type << '\n';
+			          << from(PacketType::SERVERDATA_RESPONSE_VALUE) << ") but got " << packet.type() << '\n';
 			success = false;
 		}
 
@@ -246,7 +263,7 @@ public:
 
 		// TODO: Handle multi-packet responses
 
-		std::string response {packet._body.begin(), packet._body.end()};
+		std::string response {packet.body().begin(), packet.body().end()};
 		std::cout << response << '\n';
 
 		_id.release(id);
@@ -274,26 +291,24 @@ public:
 			return false;
 		}
 
-		Packet out_packet(0);
+		Packet incoming_packet(0);
 		pollfd fd {};
 		fd.fd = _sockfd;
 		fd.events = POLLIN;
 
 		int result = poll(&fd, 1, timeout_ms);
 
-		if (result > 0 && (fd.revents & POLLIN)) {
-			int bytes_received = ::recv(_sockfd, _buffer.data(), _buffer.size(), 0);
+		if (result > 0) {
+			if (fd.revents & POLLIN) {
+				ssize_t bytes_received = ::recv(_sockfd, _buffer.data(), _buffer.size(), 0);
 
-			if (bytes_received < 0) {
-				std::cout << "Error receiving packet: " << stream_errno(errno);
-				return false;
+				if (bytes_received < 0) {
+					std::cout << "Error receiving packet: " << stream_errno(errno);
+					return false;
+				}
+
+				incoming_packet.from_byte_buffer(_buffer.data(), bytes_received);
 			}
-
-			out_packet._size = from_little_endian({_buffer[0], _buffer[1], _buffer[2], _buffer[3]});
-			out_packet._id = from_little_endian({_buffer[4], _buffer[5], _buffer[6], _buffer[7]});
-			out_packet._type = from_little_endian({_buffer[8], _buffer[9], _buffer[10], _buffer[11]});
-			// Skip last two bytes (null terminators)
-			out_packet._body = std::vector<uint8_t>(_buffer.begin() + 12, _buffer.begin() + bytes_received - 2);
 		}
 		else if (result == 0) {
 			std::cout << "Timed out waiting for packet\n";
@@ -304,7 +319,7 @@ public:
 			return false;
 		}
 
-		packet = out_packet;
+		packet = incoming_packet;
 		return true;
 	}
 
