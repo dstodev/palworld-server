@@ -155,12 +155,12 @@ private:
 
 class IdGenerator
 {
-	std::unordered_set<int> _ids {};
+	std::unordered_set<uint32_t> _ids {};
 
 public:
-	int generate()
+	uint32_t generate()
 	{
-		int id = 0;
+		uint32_t id = 0;
 		while (_ids.find(id) != _ids.end()) {
 			id++;
 		}
@@ -168,7 +168,7 @@ public:
 		return id;
 	}
 
-	void release(int id)
+	void release(uint32_t id)
 	{
 		_ids.erase(id);
 	}
@@ -677,7 +677,7 @@ bool test_id_generator()
 
 	IdGenerator idgen {};
 
-	auto test = [&](int expected_id) {
+	auto test = [&](uint32_t expected_id) {
 		auto id = idgen.generate();
 		assert_eq(expected_id, id);
 	};
