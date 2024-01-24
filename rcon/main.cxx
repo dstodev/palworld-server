@@ -406,7 +406,8 @@ int main(int argc, char const* argv[])
 		std::cout << "RCON client " << basename << "\n\n"
 		          << "Usage: " << basename << " host[:port] [command] <<< rcon_password\n"
 		          << "   or: echo rcon_password | " << basename << " host[:port] [command]\n"
-		          << "   or: cat file_with_rcon_password | " << basename << " host[:port] [command]\n\n"
+		          << "   or: cat file_with_rcon_password | " << basename << " host[:port] [command]\n"
+		          << "   or: " << basename << " test\n\n"
 		          << "If a command is not provided, the client will print whether or not it can connect to the "
 		             "server.\n";
 		return 1;
@@ -652,6 +653,20 @@ bool test_packet()
 	expected = {14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'a', 'b', 'c', 'd', 0, 0};
 	test_to_byte_buffer("abcd", expected);
 	assert_eq(18, expected.size());
+
+	auto test_from_byte_buffer = [&](std::vector<uint8_t> const& buffer) {
+		Packet packet(0);
+		packet.from_byte_buffer(buffer.data(), buffer.size());
+		assert_eq(buffer, packet.to_byte_buffer());
+	};
+
+	//                     size         id          type     body  null
+	//                     -----------  ----------  ----------  -  -
+	test_from_byte_buffer({14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+
+	//                     size         id          type        body                   null
+	//                     -----------  ----------  ----------  ---------------------  -
+	test_from_byte_buffer({14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'a', 'b', 'c', 'd', 0, 0});
 
 	return success;
 }
