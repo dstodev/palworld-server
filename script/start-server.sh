@@ -87,6 +87,8 @@ if $update_server; then
 
 	echo Fixing server file permissions...
 
+	"$script_dir/fix-permissions.sh"
+
 	sudo chown --recursive ":$server_group_name" "$mount_dir"
 	sudo find "$mount_dir" -type d -exec chmod g+w,g+s {} +
 

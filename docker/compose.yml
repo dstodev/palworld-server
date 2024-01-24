@@ -27,6 +27,7 @@ services:
       context: .
       args:
         server_port: $SERVER_PORT
+        rcon_port: $RCON_PORT
         user_id: $SERVER_USER_ID
         user_name: $SERVER_USER_NAME
         group_id: $SERVER_GROUP_ID
@@ -37,6 +38,7 @@ services:
     entrypoint: [ '/server-files/server/start.sh' ]
     ports:
       - $SERVER_PORT:$SERVER_PORT/udp
+      - $RCON_PORT:$RCON_PORT/tcp
     user: "$SERVER_USER_NAME:$SERVER_GROUP_NAME"
     volumes:
       - palworld-server-files:/server-files/
