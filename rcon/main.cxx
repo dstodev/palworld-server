@@ -207,6 +207,44 @@ public:
 		return success;
 	}
 
+	bool command(std::string const& command, int timeout_ms = 5000)
+	{
+		auto id = _id.generate();
+		Packet packet(id);
+		packet.set_type(PacketType::SERVERDATA_EXECCOMMAND);
+		packet.set_body(command);
+
+		bool success = true;
+
+		if (!send(packet)) {
+			success = false;
+		}
+
+		// Received packet should be SERVERDATA_RESPONSE_VALUE with id == sent id
+		if (success && !recv(packet, timeout_ms)) {
+			success = false;
+		}
+
+		if (success && packet._type != from(PacketType::SERVERDATA_RESPONSE_VALUE)) {
+			std::cout << "Expected packet type SERVERDATA_RESPONSE_VALUE ("
+			          << from(PacketType::SERVERDATA_RESPONSE_VALUE) << ") but got " << packet._type << '\n';
+			success = false;
+		}
+
+		if (success && packet.id() != id) {
+			std::cout << "Expected packet id " << id << " but got " << packet.id() << '\n';
+			success = false;
+		}
+
+		// TODO: Handle multi-packet responses
+
+		std::string response {packet._body.begin(), packet._body.end()};
+		std::cout << response << '\n';
+
+		_id.release(id);
+		return success;
+	}
+
 	bool send(Packet const& packet)
 	{
 		if (_sockfd < 0 && !connect_to_server()) {
@@ -245,7 +283,8 @@ public:
 			out_packet._size = from_little_endian({_buffer[0], _buffer[1], _buffer[2], _buffer[3]});
 			out_packet._id = from_little_endian({_buffer[4], _buffer[5], _buffer[6], _buffer[7]});
 			out_packet._type = from_little_endian({_buffer[8], _buffer[9], _buffer[10], _buffer[11]});
-			out_packet._body = std::vector<uint8_t>(_buffer.begin() + 12, _buffer.end());
+			// Skip last two bytes (null terminators)
+			out_packet._body = std::vector<uint8_t>(_buffer.begin() + 12, _buffer.begin() + bytes_received - 2);
 		}
 		else if (result == 0) {
 			std::cout << "Timed out waiting for packet\n";
@@ -339,11 +378,28 @@ int main(int argc, char const* argv[])
 	RconConnection rcon {argv[1]};
 	auto password = get_password();
 
-	if (!password.empty() && rcon.authenticate(password)) {
-		std::cout << "Successfully authenticated\n";
+	if (password.empty()) {
+		return 1;
+	}
+
+	std::cout << "Authentication... ";
+
+	if (rcon.authenticate(password)) {
+		std::cout << "success\n";
 	}
 	else {
-		std::cout << "Failed to authenticate\n";
+		std::cout << "failed!\n";
+		return 1;
+	}
+
+	if (argc > 2) {
+		std::string command {argv[2]};
+		for (int i = 3; i < argc; i++) {
+			command += ' ';
+			command += argv[i];
+		}
+		std::cout << "Sending command \"" << command << "\"...\n";
+		return rcon.command(command) ? 0 : 1;
 	}
 
 	return 0;
