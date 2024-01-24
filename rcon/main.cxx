@@ -254,11 +254,12 @@ public:
 
 	bool send(Packet const& packet)
 	{
-		if (_sockfd < 0 && !connect_to_server()) {
+		if (!connect_to_server()) {
 			return false;
 		}
 
 		auto buffer = packet.to_byte_buffer();
+
 		if (::send(_sockfd, buffer.data(), buffer.size(), 0) < 0) {
 			std::cout << "Error sending packet: " << stream_errno(errno);
 			return false;
@@ -268,7 +269,7 @@ public:
 
 	bool recv(Packet& packet, int timeout_ms = 5000)
 	{
-		if (_sockfd < 0 && !connect_to_server()) {
+		if (!connect_to_server()) {
 			return false;
 		}
 
@@ -309,28 +310,42 @@ public:
 private:
 	bool connect_to_server()
 	{
+		if (_sockfd >= 0) {
+			return true;
+		}
+
 		auto address = resolve_hostname(_hostname);
 
-		char buf[INET_ADDRSTRLEN] {};
-		inet_ntop(address.sin_family, &address.sin_addr, buf, sizeof(buf));
-		std::cout << "Connecting to " << _hostname << " (" << buf << ":" << _port << ") ...\n";
+		bool success = address.sin_family != AF_UNSPEC;
+		int new_sockfd = -1;
 
-		int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (success) {
+			char buf[INET_ADDRSTRLEN] {};
+			inet_ntop(address.sin_family, &address.sin_addr, buf, sizeof(buf));
+			std::cout << "Connecting to " << _hostname << " (" << buf << ":" << _port << ") ...\n";
+			new_sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		}
 
-		if (sockfd < 0) {
+		if (success && new_sockfd < 0) {
 			std::cout << "Error creating socket: " << stream_errno(errno);
-			return false;
+			success = false;
 		}
 
 		address.sin_port = htons(_port);
 
-		if (connect(sockfd, (sockaddr*) &address, sizeof(address)) < 0) {
+		if (success && connect(new_sockfd, (sockaddr*) &address, sizeof(address)) < 0) {
 			std::cout << "Error connecting to server: " << stream_errno(errno);
-			return false;
+			success = false;
 		}
 
-		_sockfd = sockfd;
-		return true;
+		if (success) {
+			_sockfd = new_sockfd;
+		}
+		else {
+			close(new_sockfd);
+		}
+
+		return success;
 	}
 
 	auto resolve_hostname(std::string const& hostname) -> sockaddr_in
@@ -345,6 +360,7 @@ private:
 
 		if (status != 0) {
 			std::cout << "Error resolving hostname: " << gai_strerror(status) << '\n';
+			freeaddrinfo(result);
 			return {};
 		}
 
@@ -391,7 +407,7 @@ int main(int argc, char const* argv[])
 		}
 	}
 	else {
-		std::cout << "Failed to authenticate!\n";
+		std::cout << "Failed to connect or authenticate!\n";
 	}
 
 	if (success && argc > 2) {
@@ -446,8 +462,10 @@ auto get_password(int timeout_ms) -> std::string
 
 	int result = poll(&fd, 1, timeout_ms);
 
-	if (result > 0 && (fd.revents & POLLIN)) {
-		std::getline(std::cin, password);
+	if (result > 0) {
+		if (fd.revents & POLLIN) {
+			std::getline(std::cin, password);
+		}
 	}
 	else if (result == 0) {
 		std::cout << "Timed out waiting for password\n";
