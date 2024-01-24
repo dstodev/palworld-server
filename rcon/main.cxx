@@ -207,6 +207,7 @@ public:
 		}
 
 		if (success && packet.id() != id) {
+			std::cout << "Authentication failed!\n";
 			success = false;
 		}
 
@@ -405,9 +406,6 @@ int main(int argc, char const* argv[])
 		if (argc == 2) {
 			std::cout << "Success!\n";
 		}
-	}
-	else {
-		std::cout << "Failed to connect or authenticate!\n";
 	}
 
 	if (success && argc > 2) {
