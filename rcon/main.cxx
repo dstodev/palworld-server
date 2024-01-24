@@ -175,6 +175,13 @@ public:
 		std::tie(_hostname, _port) = split_hoststr(hoststr);
 	}
 
+	~RconConnection()
+	{
+		if (_sockfd >= 0) {
+			close(_sockfd);
+		}
+	}
+
 	bool authenticate(std::string const& password, int timeout_ms = 5000)
 	{
 		auto id = _id.generate();
@@ -302,11 +309,11 @@ public:
 private:
 	bool connect_to_server()
 	{
-		auto info = resolve_hostname(_hostname);
+		auto address = resolve_hostname(_hostname);
 
-		// char buf[INET_ADDRSTRLEN] {};
-		// inet_ntop(info.sin_family, &info.sin_addr, buf, sizeof(buf));
-		// std::cout << "Resolved hostname " << _hostname << " to IP address " << buf << '\n';
+		char buf[INET_ADDRSTRLEN] {};
+		inet_ntop(address.sin_family, &address.sin_addr, buf, sizeof(buf));
+		std::cout << "Connecting to " << _hostname << " (" << buf << ":" << _port << ") ...\n";
 
 		int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -315,11 +322,9 @@ private:
 			return false;
 		}
 
-		sockaddr_in serv_addr {};
-		serv_addr.sin_family = AF_INET;
-		serv_addr.sin_port = htons(_port);
+		address.sin_port = htons(_port);
 
-		if (connect(sockfd, (sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
+		if (connect(sockfd, (sockaddr*) &address, sizeof(address)) < 0) {
 			std::cout << "Error connecting to server: " << stream_errno(errno);
 			return false;
 		}
@@ -378,27 +383,24 @@ int main(int argc, char const* argv[])
 	RconConnection rcon {argv[1]};
 	auto password = get_password();
 
-	if (password.empty()) {
-		return 1;
-	}
+	bool success = !password.empty();
 
-	std::cout << "Authentication... ";
-
-	if (rcon.authenticate(password)) {
-		std::cout << "success\n";
+	if (success && (success = rcon.authenticate(password))) {
+		if (argc == 2) {
+			std::cout << "Success!\n";
+		}
 	}
 	else {
-		std::cout << "failed!\n";
-		return 1;
+		std::cout << "Failed to authenticate!\n";
 	}
 
-	if (argc > 2) {
+	if (success && argc > 2) {
 		std::string command {argv[2]};
 		for (int i = 3; i < argc; i++) {
 			command += ' ';
 			command += argv[i];
 		}
-		std::cout << "Sending command \"" << command << "\"...\n";
+		std::cout << "Sending command \"" << command << "\" ...\n";
 		return rcon.command(command) ? 0 : 1;
 	}
 
@@ -418,14 +420,15 @@ auto split_hoststr(std::string const& hoststr) -> std::tuple<std::string, uint16
 	}
 	else {
 		host = hoststr.substr(0, colon);
-		if (host.empty()) {
-			host = "localhost";
-		}
 		try {
 			port = std::stoi(hoststr.substr(colon + 1));
 		} catch (std::invalid_argument const& e) {
 			port = DEFAULT_RCON_PORT;
 		}
+	}
+
+	if (host.empty()) {
+		host = "localhost";
 	}
 
 	return {host, port};
@@ -553,6 +556,7 @@ bool test_split_hoststr()
 	test(":", "localhost", DEFAULT_RCON_PORT);
 	test(":27000", "localhost", 27000);
 	test("name:", "name", DEFAULT_RCON_PORT);
+	test("", "localhost", DEFAULT_RCON_PORT);
 
 	return success;
 }
