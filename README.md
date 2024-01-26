@@ -24,8 +24,32 @@ to update the server files.
 ## Stop server
 
 This script will save the world and gracefully stop the server.
+This script requires RCON (see below).
 
 `./script/stop-server.sh`
+
+To forcefully stop the server, attach to the server screen `screen -r palworld-server`
+and press `CTRL+C`.
+
+## RCON
+
+This environment supports RCON for sending commands to the server.
+
+Without an RCON password, you cannot:
+
+- Gracefully stop the server using `./script/stop-server.sh`,
+  because it uses RCON to send the shutdown command.
+
+- Use `./script/backup.sh` without the `--force` flag, because it uses RCON to
+  send the save command.
+
+To set an RCON password, edit `./server-files/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini`:
+
+- set `RCONEnabled=True`
+- set `RCONPort=27015` (or update ./docker/.env to match)
+- set `AdminPassword="YourRconPassword"`
+
+then make a file `./rcon/secret` containing the same password.
 
 ## Backups
 
@@ -57,6 +81,7 @@ Replace the files in `./server-files/Pal/Saved` with the files from the backup.
 
   Keybinds:
   - `CTRL+A` then `D` to detach
+  - `CTRL+C` to stop the server
 
 <!-- line break -->
 

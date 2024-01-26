@@ -44,7 +44,7 @@ fi
 
 # If the RCON secret file does not exist, tell the user to create it.
 if [ ! -f "$rcon_dir/secret" ]; then
-	echo "RCON password file does not exist."
+	echo "!! RCON password file does not exist."
 	echo "Create $secret_path containing only the RCON password."
 	exit 1
 fi
