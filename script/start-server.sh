@@ -11,6 +11,7 @@ docker_dir="$source_dir/docker"
 help() {
 	cat <<-EOF
 		Usage: $(basename "$0") [ -u ]
+		  -h, --help    Prints this message.
 		  -u, --update  Updates the server files before starting the server.
 	EOF
 }
