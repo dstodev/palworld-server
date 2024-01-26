@@ -53,7 +53,7 @@ services:
       dockerfile_inline: |
         FROM alpine:latest
         ENV TZ=America/Los_Angeles
-        RUN apk add --no-cache tzdata \
+        RUN apk add --no-cache rsync tzdata \
          && ln -s /usr/share/zoneinfo/$$TZ /etc/localtime
         RUN addgroup --gid $SERVER_GROUP_ID $SERVER_GROUP_NAME \
          && adduser --disabled-password --gecos "" --uid $SERVER_USER_ID --ingroup $SERVER_GROUP_NAME $SERVER_USER_NAME
@@ -68,6 +68,8 @@ services:
         server_data_path="/server-files/Pal/Saved"
         timestamp=$(date +%Y%j-%H%M%S)
         backup_path="/backups/backup-$$timestamp.tar.bz2"
+        # Copy files first
+        rsync --archive --delete "$$server_data_path/" "backup/"
         # Backup server files using bzip2
-        tar -cjf backup.tar.bz2 -C "$$server_data_path" .
+        tar -cjf backup.tar.bz2 -C "backup/" .
         mv backup.tar.bz2 "$$backup_path"

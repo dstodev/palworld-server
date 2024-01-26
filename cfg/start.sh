@@ -8,7 +8,7 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:$script_dir/../linux64"
 
 # For file permissions:
 # file: -rw-rw-r--
-# dir:  drwxrwxr-x
+#  dir: drwxrwxr-x
 umask 0002
 
 "$script_dir/../PalServer.sh" -useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS

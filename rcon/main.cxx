@@ -38,7 +38,7 @@ uint16_t constexpr DEFAULT_RCON_PORT = 27015;
 int constexpr TOTAL_PACKET_SIZE = 4100;
 
 bool test();
-auto split_hoststr(std::string const& hoststr) -> std::tuple<std::string, uint16_t>;
+auto split_hoststr(std::string const& host_str) -> std::tuple<std::string, uint16_t>;
 auto get_password(int timeout_ms = 5000) -> std::string;
 auto to_little_endian(uint32_t value) -> std::array<uint8_t, sizeof(uint32_t)>;
 auto from_little_endian(std::array<uint8_t, sizeof(uint32_t)> const& bytes) -> uint32_t;
@@ -183,13 +183,13 @@ class RconConnection
 	std::array<uint8_t, TOTAL_PACKET_SIZE> _buffer;
 
 public:
-	RconConnection(std::string const& hoststr)
+	RconConnection(std::string const& host_str)
 	    : _hostname {}
 	    , _port {}
 	    , _sockfd {-1}
 	    , _id {}
 	{
-		std::tie(_hostname, _port) = split_hoststr(hoststr);
+		std::tie(_hostname, _port) = split_hoststr(host_str);
 	}
 
 	~RconConnection()
@@ -218,13 +218,13 @@ public:
 		}
 
 		if (success && packet.type() != from(PacketType::SERVERDATA_AUTH_RESPONSE)) {
-			std::cout << "Expected packet type SERVERDATA_AUTH_RESPONSE (" << from(PacketType::SERVERDATA_AUTH_RESPONSE)
+			std::cerr << "Expected packet type SERVERDATA_AUTH_RESPONSE (" << from(PacketType::SERVERDATA_AUTH_RESPONSE)
 			          << ") but got " << packet.type() << '\n';
 			success = false;
 		}
 
 		if (success && packet.id() != id) {
-			std::cout << "Authentication failed!\n";
+			std::cerr << "Authentication failed!\n";
 			success = false;
 		}
 
@@ -251,20 +251,24 @@ public:
 		}
 
 		if (success && packet.type() != from(PacketType::SERVERDATA_RESPONSE_VALUE)) {
-			std::cout << "Expected packet type SERVERDATA_RESPONSE_VALUE ("
+			std::cerr << "Expected packet type SERVERDATA_RESPONSE_VALUE ("
 			          << from(PacketType::SERVERDATA_RESPONSE_VALUE) << ") but got " << packet.type() << '\n';
 			success = false;
 		}
 
 		if (success && packet.id() != id) {
-			std::cout << "Expected packet id " << id << " but got " << packet.id() << '\n';
+			std::cerr << "Expected packet id " << id << " but got " << packet.id() << '\n';
 			success = false;
 		}
 
 		// TODO: Handle multi-packet responses
 
 		std::string response {packet.body().begin(), packet.body().end()};
-		std::cout << response << '\n';
+		std::cout << response;
+
+		if (response.back() != '\n') {
+			std::cout << '\n';
+		}
 
 		_id.release(id);
 		return success;
@@ -279,7 +283,7 @@ public:
 		auto buffer = packet.to_byte_buffer();
 
 		if (::send(_sockfd, buffer.data(), buffer.size(), 0) < 0) {
-			std::cout << "Error sending packet: " << stream_errno(errno);
+			std::cerr << "Error sending packet: " << stream_errno(errno);
 			return false;
 		}
 		return true;
@@ -303,7 +307,7 @@ public:
 				ssize_t bytes_received = ::recv(_sockfd, _buffer.data(), _buffer.size(), 0);
 
 				if (bytes_received < 0) {
-					std::cout << "Error receiving packet: " << stream_errno(errno);
+					std::cerr << "Error receiving packet: " << stream_errno(errno);
 					return false;
 				}
 
@@ -311,11 +315,11 @@ public:
 			}
 		}
 		else if (result == 0) {
-			std::cout << "Timed out waiting for packet\n";
+			std::cerr << "Timed out waiting for packet\n";
 			return false;
 		}
 		else {
-			std::cout << "Error waiting for packet: " << stream_errno(errno);
+			std::cerr << "Error waiting for packet: " << stream_errno(errno);
 			return false;
 		}
 
@@ -336,21 +340,21 @@ private:
 		int new_sockfd = -1;
 
 		if (success) {
-			char buf[INET_ADDRSTRLEN] {};
-			inet_ntop(address.sin_family, &address.sin_addr, buf, sizeof(buf));
-			std::cout << "Connecting to " << _hostname << " (" << buf << ":" << _port << ") ...\n";
+			// char buf[INET_ADDRSTRLEN] {};
+			// inet_ntop(address.sin_family, &address.sin_addr, buf, sizeof(buf));
+			// std::cout << "Connecting to " << _hostname << " (" << buf << ":" << _port << ") ...\n";
 			new_sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		}
 
 		if (success && new_sockfd < 0) {
-			std::cout << "Error creating socket: " << stream_errno(errno);
+			std::cerr << "Error creating socket: " << stream_errno(errno);
 			success = false;
 		}
 
 		address.sin_port = htons(_port);
 
 		if (success && connect(new_sockfd, (sockaddr*) &address, sizeof(address)) < 0) {
-			std::cout << "Error connecting to server: " << stream_errno(errno);
+			std::cerr << "Error connecting to server: " << stream_errno(errno);
 			success = false;
 		}
 
@@ -375,13 +379,13 @@ private:
 		int status = getaddrinfo(hostname.c_str(), nullptr, &hints, &result);
 
 		if (status != 0) {
-			std::cout << "Error resolving hostname: " << gai_strerror(status) << '\n';
+			std::cerr << "Error resolving hostname: " << gai_strerror(status) << '\n';
 			freeaddrinfo(result);
 			return {};
 		}
 
 		if (result->ai_next) {
-			std::cout << "Warning: hostname resolved to multiple IP addresses!\n";
+			std::cerr << "Warning: hostname resolved to multiple IP addresses!\n";
 		}
 
 		sockaddr_in addr {};
@@ -392,7 +396,7 @@ private:
 	}
 };
 
-// g++ main.cxx && ./a.out
+// g++ -O3 main.cxx && ./a.out
 int main(int argc, char const* argv[])
 {
 	std::string filename = argv[0];
@@ -430,46 +434,18 @@ int main(int argc, char const* argv[])
 			command += ' ';
 			command += argv[i];
 		}
-		std::cout << "Sending command \"" << command << "\" ...\n";
+		// std::cout << "Sending command \"" << command << "\" ...\n";
 		return rcon.command(command) ? 0 : 1;
 	}
 
 	return 0;
 }
 
-auto split_hoststr(std::string const& hoststr) -> std::tuple<std::string, uint16_t>
-{
-	std::string host {};
-	uint16_t port {};
-
-	auto colon = hoststr.find_last_of(':');
-
-	if (colon == std::string::npos) {
-		host = hoststr;
-		port = DEFAULT_RCON_PORT;
-	}
-	else {
-		host = hoststr.substr(0, colon);
-		try {
-			port = std::stoi(hoststr.substr(colon + 1));
-		} catch (std::invalid_argument const& e) {
-			port = DEFAULT_RCON_PORT;
-		}
-	}
-
-	if (host.empty()) {
-		host = "localhost";
-	}
-
-	return {host, port};
-}
-
 auto get_password(int timeout_ms) -> std::string
 {
 	std::string password {};
 
-	struct pollfd fd
-	{};
+	pollfd fd {};
 
 	fd.fd = STDIN_FILENO;
 	fd.events = POLLIN;
@@ -482,13 +458,40 @@ auto get_password(int timeout_ms) -> std::string
 		}
 	}
 	else if (result == 0) {
-		std::cout << "Timed out waiting for password\n";
+		std::cerr << "Timed out waiting for password\n";
 	}
 	else {
-		std::cout << "Error waiting for password: " << stream_errno(errno);
+		std::cerr << "Error waiting for password: " << stream_errno(errno);
 	}
 
 	return password;
+}
+
+auto split_hoststr(std::string const& host_str) -> std::tuple<std::string, uint16_t>
+{
+	std::string host {};
+	uint16_t port {};
+
+	auto colon = host_str.find_last_of(':');
+
+	if (colon == std::string::npos) {
+		host = host_str;
+		port = DEFAULT_RCON_PORT;
+	}
+	else {
+		host = host_str.substr(0, colon);
+		try {
+			port = std::stoi(host_str.substr(colon + 1));
+		} catch (std::invalid_argument const& e) {
+			port = DEFAULT_RCON_PORT;
+		}
+	}
+
+	if (host.empty()) {
+		host = "localhost";
+	}
+
+	return {host, port};
 }
 
 auto to_little_endian(uint32_t value) -> std::array<uint8_t, sizeof(uint32_t)>
@@ -545,7 +548,7 @@ bool is_big_endian()
 /// Assumes a variable named "success" is in scope and initialized to true
 #define assert_eq(a, b) \
 	if ((a) != (b)) { \
-		std::cout << "Assertion failed: " << (a) << " == " << (b) << '\n' \
+		std::cerr << "Assertion failed: " << (a) << " == " << (b) << '\n' \
 		          << "            near: " << __FILE__ << ":" << __LINE__ << '\n'; \
 		success = false; \
 	}
@@ -575,10 +578,10 @@ bool test_split_hoststr()
 {
 	bool success = true;
 
-	auto test = [&](std::string const& hoststr, std::string const& expected_host, uint16_t expected_port) {
+	auto test = [&](std::string const& host_str, std::string const& expected_host, uint16_t expected_port) {
 		std::string host {};
 		uint16_t port {};
-		std::tie(host, port) = split_hoststr(hoststr);
+		std::tie(host, port) = split_hoststr(host_str);
 		assert_eq(expected_host, host);
 		assert_eq(expected_port, port);
 	};

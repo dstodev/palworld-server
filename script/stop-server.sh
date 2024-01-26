@@ -2,6 +2,19 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "$0")" && env pwd --physical)"
-compose="$script_dir/../docker/compose.yml"
 
-docker compose -f "$compose" down --remove-orphans
+running_container=$(docker container list --filter name=palworld-server --quiet)
+
+if [ -n "$running_container" ]; then
+	# palworld commands
+	rcon="$script_dir/send-rcon.sh"
+	"$rcon" save | grep --ignore-case --invert-match 'Error'
+	"$rcon" shutdown 1 closing... | grep --ignore-case --invert-match 'Error'
+
+	printf 'Waiting for server to close... '
+	docker wait "$running_container" >/dev/null
+	printf 'done!\n'
+else
+	echo Server is not running!
+	exit 2
+fi

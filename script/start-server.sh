@@ -5,16 +5,8 @@ set -euo pipefail
 # -o pipefail : fail on any error in pipe
 
 script_dir="$(cd "$(dirname "$0")" && env pwd --physical)"
-source_dir="$script_dir/.."
+source_dir="$(readlink --canonicalize "$script_dir/..")"
 docker_dir="$source_dir/docker"
-
-# shellcheck disable=SC2046
-export $(xargs < "$docker_dir/.env")
-
-server_user_id="$SERVER_USER_ID"
-server_user_name="$SERVER_USER_NAME"
-server_group_id="$SERVER_GROUP_ID"
-server_group_name="$SERVER_GROUP_NAME"
 
 help() {
 	cat <<-EOF
@@ -49,8 +41,16 @@ done
 
 update_server=${update_server-false}
 
+if $update_server; then
+	if ! sudo --non-interactive true 2>/dev/null; then
+		echo sudo password required to update server files.
+		echo This is to fix server file permissions after updating.
+		sudo --validate || exit
+	fi
+fi
+
 logs_dir="$source_dir/logs"
-compose_yml=$(readlink --canonicalize "$docker_dir/compose.yml")
+compose_yml="$docker_dir/compose.yml"
 
 running_container=$(docker container list --filter name=palworld-server --quiet)
 
@@ -59,47 +59,20 @@ if [ -n "$running_container" ]; then
 	exit 2
 fi
 
-compose=(docker compose -f "$compose_yml")
-
-# If there is no server group, create it.
-if [ ! "$(getent group "$server_group_name")" ]; then
-	echo Creating group: "$server_group_name"
-	sudo groupadd --gid "$server_group_id" "$server_group_name"
-fi
-
-# If there is no server user, create it.
-if [ ! "$(getent passwd "$server_user_name")" ]; then
-	echo Creating user: "$server_user_name"
-	sudo useradd --uid "$server_user_id" --gid "$server_group_id" "$server_user_name"
-fi
-
-# If the host user is not in the server group, add them.
-if ! id --groups --name | grep --quiet --fixed-strings --word-regexp "$server_group_name"; then
-	echo "Adding current user $(id --user --name) to group: $server_group_name"
-	sudo usermod -aG "$server_group_name" "$(id --user --name)"
-fi
+compose=(docker compose --file "$compose_yml")
 
 if $update_server; then
 	echo Updating server...
 	"${compose[@]}" run --rm server-files
 
-	mount_dir="$("$script_dir/cd-mountpoint.sh" --path)"
-
-	echo Fixing server file permissions...
-
 	"$script_dir/fix-permissions.sh"
 
-	sudo chown --recursive ":$server_group_name" "$mount_dir"
-	sudo find "$mount_dir" -type d -exec chmod g+w,g+s {} +
-
-	sudo chown --recursive ":$server_group_name" "$source_dir"
-	sudo find "$source_dir" -type d -exec chmod g+w,g+s {} +
-	sudo chmod g+x "$source_dir/cfg/start.sh"
+	mount_dir="$("$script_dir/cd-mountpoint.sh" --path)"
 
 	echo Linking host files to volume...
 
 	mkdir --parents "$mount_dir/server"
-	sudo ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
+	ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
 
 	echo Linking volume files to host...
 
@@ -108,9 +81,9 @@ if $update_server; then
 	# handle=docker container ls -all --quiet --filter name=server-files
 fi
 
-compose_run=("${compose[@]}" run --rm --service-ports palworld-server)
+compose_run=("${compose[@]}" --progress plain run --rm --service-ports palworld-server)
 
-log=$(readlink -m "$logs_dir/log-$(date +%Y%j-%H%M%S).txt")
+log="$logs_dir/log-$(date +%Y%j-%H%M%S).txt"
 mkdir --parents "$(dirname "$log")"
 
 echo Running command: "${compose_run[*]}"

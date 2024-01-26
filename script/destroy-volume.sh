@@ -12,6 +12,6 @@ printf '%s\n%s\n\n%s' \
 read -r option
 
 case $option in
-[Yy]*) docker compose -f "$compose" down --remove-orphans --timeout 0 --volumes ;;
+[Yy]*) docker compose --file "$compose" down --remove-orphans --timeout 0 --volumes ;;
 *) echo "Operation aborted." ;;
 esac
