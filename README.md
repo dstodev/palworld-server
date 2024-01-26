@@ -28,7 +28,7 @@ This script requires RCON (see below).
 
 `./script/stop-server.sh`
 
-To forcefully stop the server, attach to the server screen `screen -r palworld-server`
+To forcefully stop the server, attach to the server screen `screen -r palworld`
 and press `CTRL+C`.
 
 ## RCON
@@ -77,7 +77,7 @@ Replace the files in `./server-files/Pal/Saved` with the files from the backup.
   `docker compose -f docker/compose.yml run --entrypoint /bin/bash palworld-server`
 
 - Attach to the server screen:  
-  `screen -r palworld-server`
+  `screen -r palworld`
 
   Keybinds:
   - `CTRL+A` then `D` to detach
@@ -101,7 +101,7 @@ Running `./script/start-server.sh --update` will cause:
 - Group `server-group` exists
 - User `server-user` (in group `server-group`) exists
 - Host user added to group `server-group` *
-- Server files owned by `server-group`
+- Server files owned by `server-user:server-group`
 - Repo files owned by `server-group` (for permission to e.g. write backups to `./backups`)
 
 > \* Changes to a user's group membership will not take effect until e.g. the
