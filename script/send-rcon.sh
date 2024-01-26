@@ -29,13 +29,15 @@ if ! dpkg --status build-essential >/dev/null 2>&1; then
 	esac
 fi
 
-# If the RCON client does not exist, build it.
+source_path="$rcon_dir/main.cxx"
 client_path="$script_dir/client.out"
 secret_path="$rcon_dir/secret"
 
-if [ ! -f "$client_path" ]; then
+# If the RCON client does not exist, or the source file is newer than the
+# client, (re)build the client.
+if [ ! -f "$client_path" ] || [ "$source_path" -nt "$client_path" ]; then
 	printf 'Building RCON client... '
-	g++ -O3 -o "$client_path" "$rcon_dir/main.cxx"
+	g++ -O3 -o "$client_path" "$source_path"
 	printf 'done!\n'
 	"$client_path" test
 fi
