@@ -6,21 +6,45 @@
 
 ## Configure server
 
+After starting for the first time, server configuration files are created in
+
+- `./server-files/`
+- `./server-files/Pal/Saved/Config/LinuxServer/`
+
+Edit these files to configure the server.
+
 ## Start server
+
+This script will download the server files and start the server. After starting
+for the first time, you do not need to use the `--update` flag unless you want
+to update the server files.
 
 `./script/start-server.sh --update`
 
 ## Stop server
 
-**You may lose data** if you stop the server using this script, as it may not
-save first.
+This script will save the world and gracefully stop the server.
 
 `./script/stop-server.sh`
 
-## Other commands
+## Backups
 
-- Fix Docker permissions to access server files (requires root permissions):  
-  `./script/fix-permissions.sh`
+This script creates a backup of important server files in `./backups/`.
+
+`./script/backup.sh --force`
+
+Backups are created automatically when the server is stopped, and can
+be further automated by e.g. a cron job. See `./script/backup.sh` for details.
+
+### Restore from backup
+
+To restore from backup, unzip the backup file you want:
+
+`tar -xjf ./backups/backup-timestamp.tar.bz2`
+
+Replace the files in `./server-files/Pal/Saved` with the files from the backup.
+
+## Other commands
 
 - Rebuild Docker image (useful for updating server files):  
   `docker compose -f docker/compose.yml build --no-cache palworld-server`
