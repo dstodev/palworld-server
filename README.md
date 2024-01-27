@@ -19,16 +19,15 @@ Edit these files to configure the server.
 
 This script will download the server files and start the server. After starting
 for the first time, you do not need to use the `--update` flag unless you want
-to update the server files.
-
+to update the server files.  
 `./script/start-server.sh --update`
 
 ## Stop server
 
-This script will save the world and gracefully stop the server.
-This script requires RCON (see below).
-
+This script will save the world and gracefully stop the server.  
 `./script/stop-server.sh`
+
+This script requires RCON (see below).
 
 To forcefully stop the server, attach to the server screen `screen -r palworld`
 and press `CTRL+C`.
@@ -44,8 +43,7 @@ These ports are configurable in `./docker/.env`.
 
 ## RCON
 
-This environment supports RCON for sending commands to the server:
-
+This environment supports RCON for sending commands to the server:  
 `./script/send-rcon.sh MyRconCommand`
 
 This script assumes the server is accessible via `localhost`, but the
@@ -56,7 +54,6 @@ To use `send-rcon.sh`, you must first set an RCON password.
 
 - Gracefully stop the server using `./script/stop-server.sh`,
   because it uses RCON to send the shutdown command.
-
 - Use `./script/backup.sh` without the `--force` flag, because it uses RCON to
   send the save command.
 
@@ -70,17 +67,15 @@ then make a file `./rcon/secret` containing the same password.
 
 ## Backups
 
-This script creates a backup of important server files in `./backups/`:
-
+This script creates a backup of important server files in `./backups/`:  
 `./script/backup.sh --force`
 
-Backups are created automatically when the server is stopped, and can
-be further automated by e.g. a cron job. See `./script/backup.sh` for details.
+Backups are created automatically when the server is stopped. You can further
+automate them using e.g. a cron job. See `./script/backup.sh` for details.
 
 ### Restore from backup
 
-To restore from backup, unzip the backup file you want:
-
+To restore from backup, unzip the backup file you want:  
 `tar -xjf ./backups/backup-timestamp.tar.bz2`
 
 Replace the files in `./server-files/Pal/Saved` with the files from the backup.
@@ -89,13 +84,10 @@ Replace the files in `./server-files/Pal/Saved` with the files from the backup.
 
 - Rebuild Docker image (useful for updating server files):  
   `docker compose -f docker/compose.yml build --no-cache palworld-server`
-
 - Browse the Docker container with a bash shell:  
   `docker compose -f docker/compose.yml run --entrypoint /bin/bash palworld-server`
-
 - Attach to the server screen:  
   `screen -r palworld`
-
   Keybinds:
   - `CTRL+A` then `D` to detach
   - `CTRL+C` to stop the server
