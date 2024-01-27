@@ -4,6 +4,8 @@
 
 - [Docker](https://docs.docker.com/get-docker/)
 
+All host scripts are tested on `Ubuntu 22.04.3 LTS`
+
 ## Configure server
 
 After starting for the first time, server configuration files are created in
@@ -31,11 +33,26 @@ This script requires RCON (see below).
 To forcefully stop the server, attach to the server screen `screen -r palworld`
 and press `CTRL+C`.
 
+## Ports
+
+The server uses the following ports:
+
+- `UDP 8211` (Game)
+- `TCP 27015` (RCON)
+
+These ports are configurable in `./docker/.env`.
+
 ## RCON
 
-This environment supports RCON for sending commands to the server.
+This environment supports RCON for sending commands to the server:
 
-Without an RCON password, you cannot:
+`./script/send-rcon.sh MyRconCommand`
+
+This script assumes the server is accessible via `localhost`, but the
+underlying C++ client `./rcon/main.cxx` supports sending messages to any host.
+
+To use `send-rcon.sh`, you must first set an RCON password.  
+**Without an RCON password, you cannot**:
 
 - Gracefully stop the server using `./script/stop-server.sh`,
   because it uses RCON to send the shutdown command.
@@ -46,14 +63,14 @@ Without an RCON password, you cannot:
 To set an RCON password, edit `./server-files/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini`:
 
 - set `RCONEnabled=True`
-- set `RCONPort=27015` (or update ./docker/.env to match)
+- set `RCONPort=27015` (or update `./docker/.env` to match)
 - set `AdminPassword="YourRconPassword"`
 
 then make a file `./rcon/secret` containing the same password.
 
 ## Backups
 
-This script creates a backup of important server files in `./backups/`.
+This script creates a backup of important server files in `./backups/`:
 
 `./script/backup.sh --force`
 
