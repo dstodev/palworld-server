@@ -67,11 +67,13 @@ then make a file `./rcon/secret` containing the same password.
 
 ## Backups
 
-This script creates a backup of important server files in `./backups/`:  
+This script creates a backup of important server files to `./backups/`:  
 `./script/backup.sh --force`
 
-Backups are created automatically when the server is stopped. You can further
-automate them using e.g. a cron job. See `./script/backup.sh` for details.
+Backups are created automatically when the server is stopped via `stop-server.sh`.
+
+You should schedule automatic backups using e.g. a cron job. See `./script/backup.sh`
+for details.
 
 ### Restore from backup
 
