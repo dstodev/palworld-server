@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# Add to crontab, running every hour:
+# Add to crontab, running every hour except 5am (time of server restart):
 #  crontab -e
-#  0 * * * * /absolute/path/to/script/backup.sh >/dev/null 2>&1
+#  0 0-4,6-23 * * * /absolute/path/to/script/backup.sh >/dev/null 2>&1
 
 case ${1-} in
 -f | --force) force=true ;;
