@@ -108,6 +108,14 @@ this happens, you may wish to only restore save files:
 
 Try this if an update cuases your world or characters to reset.
 
+## Restart server
+
+To restart the server:  
+`./script/stop-server.sh --restart`
+
+You may schedule automatic restarts using e.g. a cron job. See `./script/stop-server.sh`
+for details.
+
 ## Other commands
 
 - Rebuild Docker image (useful for updating server files):  
