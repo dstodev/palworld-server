@@ -14,12 +14,13 @@ help() {
 		Usage: $(basename "$0") [ -u ]
 		  -h, --help    Prints this message.
 		  -u, --update  Updates the server files before starting the server.
+		  -p, --update-only  Updates the server files and exits. Implies --update.
 	EOF
 }
 
 canonicalized=$(getopt --name "$(basename "$0")" \
-	--options hu \
-	--longoptions help,update \
+	--options hup \
+	--longoptions help,update,update-only \
 	-- "$@") || status=$?
 
 if [ "${status-0}" -ne 0 ]; then
@@ -38,10 +39,15 @@ for arg in "$@"; do
 	-u | --update)
 		update_server=true
 		;;
+	-p | --update-only)
+		update_server=true
+		update_only=true
+		;;
 	esac
 done
 
 update_server=${update_server-false}
+update_only=${update_only-false}
 
 if $update_server; then
 	if ! sudo --non-interactive true 2>/dev/null; then
@@ -75,13 +81,15 @@ if $update_server; then
 	ln --logical --force "$source_dir/cfg/start.sh" "$server_dir/server/start.sh"
 fi
 
-compose_run=("${compose[@]}" --progress plain run --rm --service-ports palworld-server)
+if ! $update_only; then
+	compose_run=("${compose[@]}" --progress plain run --rm --service-ports palworld-server)
 
-log="$logs_dir/log-$(date +%Y%j-%H%M%S).txt"
-mkdir --parents "$(dirname "$log")"
+	log="$logs_dir/log-$(date +%Y%j-%H%M%S).txt"
+	mkdir --parents "$(dirname "$log")"
 
-echo Running command: "${compose_run[*]}"
-echo "... with output logging to file: $log"
-echo "... in screen daemon; screen -r palworld"
+	echo Running command: "${compose_run[*]}"
+	echo "... with output logging to file: $log"
+	echo "... in screen daemon; screen -r palworld"
 
-screen -dmS palworld -L -Logfile "$log" "${compose_run[@]}"
+	screen -dmS palworld -L -Logfile "$log" "${compose_run[@]}"
+fi

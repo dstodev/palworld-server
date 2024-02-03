@@ -1,11 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# This script asserts that all directories up to the mountpoint have
-# permissions for others to execute (o+x). This is necessary for users
-# to access their volume files without sudo permissions.
-
-# Additionally, it configures the server user and group, and sets
+# This script configures the server user and group, and sets
 # permissions on the server files.
 
 script_dir="$(cd "$(dirname "$0")" && env pwd --physical)"

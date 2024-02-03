@@ -37,7 +37,7 @@ and press `CTRL+C`.
 The server uses the following ports:
 
 - `UDP 8211` (Game)
-- `TCP 27015` (RCON)
+- `TCP 25575` (RCON)
 
 These ports are configurable in `./docker/.env`.
 
@@ -60,7 +60,7 @@ To use `send-rcon.sh`, you must first set an RCON password.
 To set an RCON password, edit `./server-files/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini`:
 
 - set `RCONEnabled=True`
-- set `RCONPort=27015` (or update `./docker/.env` to match)
+- set `RCONPort=25575` (or update `./docker/.env` to match)
 - set `AdminPassword="YourRconPassword"`
 
 then make a file `./rcon/secret` containing the same password.
@@ -81,6 +81,32 @@ To restore from backup, unzip the backup file you want:
 `tar -xjf ./backups/backup-timestamp.tar.bz2`
 
 Replace the files in `./server-files/Pal/Saved` with the files from the backup.
+
+## Update server
+
+To update server files, use the `--update` flag like when first
+starting the server:  
+`./script/start-server.sh --update`
+
+Palworld updates may change certain config files. When
+this happens, you may wish to only restore save files:
+
+1. Stop the server:  (`--force` if necessary)  
+   `./script/stop-server.sh`
+2. Make sure you have a backup of `./server-files/Pal/Saved`
+3. Delete `./server-files/`:  
+   `rm -rf ./server-files/`
+4. Populate the server files:  
+   `./script/start-server.sh --update-only`
+5. Restore your backup of `./server-files/Pal/Saved/SaveGames`  
+6. Take note of the server name: `./server-files/Pal/Saved/SaveGames/0/<YOUR_SERVER_NAME>`
+7. Update `./server-files/Pal/Saved/Config/LinuxServer/GameUserSettings.ini`:  
+   Set `DedicatedServerName=YOUR_SERVER_NAME`
+8. Re-set your configurations in `./server-files/Pal/Saved/Config/LinuxServer/`
+9. Start the server:
+   `./script/start-server.sh`
+
+Try this if an update cuases your world or characters to reset.
 
 ## Other commands
 

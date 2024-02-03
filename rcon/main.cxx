@@ -34,7 +34,7 @@ struct Packet
 
 clang-format on */
 
-uint16_t constexpr DEFAULT_RCON_PORT = 27015;
+uint16_t constexpr DEFAULT_RCON_PORT = 25575;
 int constexpr TOTAL_PACKET_SIZE = 4100;
 
 bool test();
