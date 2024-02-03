@@ -76,7 +76,10 @@ if [ -n "$running_container_id" ]; then
 	fi
 else
 	echo Server is not running!
-	exit 2
+
+	if ! $restart; then
+		exit 2
+	fi
 fi
 
 if $restart; then
