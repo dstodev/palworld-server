@@ -7,6 +7,7 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "$0")" && env pwd --physical)"
 source_dir="$(readlink --canonicalize "$script_dir/..")"
 docker_dir="$source_dir/docker"
+server_dir="$source_dir/server-files"
 
 help() {
 	cat <<-EOF
@@ -45,7 +46,7 @@ update_server=${update_server-false}
 if $update_server; then
 	if ! sudo --non-interactive true 2>/dev/null; then
 		echo sudo password required to update server files.
-		echo This is to fix server file permissions after updating.
+		echo Required to set server file permissions.
 		sudo --validate || exit
 	fi
 fi
@@ -66,20 +67,12 @@ if $update_server; then
 	echo Updating server...
 	"${compose[@]}" run --rm server-files
 
-	"$script_dir/fix-permissions.sh"
-
-	mount_dir="$("$script_dir/cd-mountpoint.sh" --path)"
-
 	echo Linking host files to volume...
 
-	mkdir --parents "$mount_dir/server"
-	ln --logical --force "$source_dir/cfg/start.sh" "$mount_dir/server/start.sh"
+	"$script_dir/fix-permissions.sh"
 
-	echo Linking volume files to host...
-
-	ln --symbolic --no-dereference --force "$mount_dir" "$source_dir/server-files"
-
-	# handle=docker container ls -all --quiet --filter name=server-files
+	mkdir --parents "$server_dir/server"
+	ln --logical --force "$source_dir/cfg/start.sh" "$server_dir/server/start.sh"
 fi
 
 compose_run=("${compose[@]}" --progress plain run --rm --service-ports palworld-server)

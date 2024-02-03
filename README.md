@@ -8,10 +8,10 @@ All host scripts are tested on `Ubuntu 22.04.3 LTS`
 
 ## Configure server
 
-After starting for the first time, server configuration files are created in
+After starting for the first time, server configuration files are created in:
 
-- `./server-files/`
-- `./server-files/Pal/Saved/Config/LinuxServer/`
+- `./server-files/` (root)
+- `./server-files/Pal/Saved/Config/LinuxServer/` (configs)
 
 Edit these files to configure the server.
 

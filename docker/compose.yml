@@ -1,14 +1,10 @@
 version: '3.9'
 
-volumes:
-  palworld-server-files:
-
-
 services:
   server-files:
     image: steamcmd/steamcmd:ubuntu
     volumes:
-      - palworld-server-files:/server-files/
+      - ../server-files/:/server-files/
     entrypoint: [ '/bin/bash', '-ec' ]
     command:
       - |
@@ -41,7 +37,7 @@ services:
       - $RCON_PORT:$RCON_PORT/tcp
     user: "$SERVER_USER_NAME:$SERVER_GROUP_NAME"
     volumes:
-      - palworld-server-files:/server-files/
+      - ../server-files/:/server-files/
 
   cmd:
     extends: palworld-server
@@ -60,8 +56,8 @@ services:
     entrypoint: [ '/bin/sh', '-ec' ]
     user: "$SERVER_USER_NAME:$SERVER_GROUP_NAME"
     volumes:
-      - palworld-server-files:/server-files/
-      - ../backups:/backups
+      - ../server-files/:/server-files/
+      - ../backups/:/backups/
     working_dir: /home/$SERVER_USER_NAME
     command:
       - |

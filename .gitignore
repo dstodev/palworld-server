@@ -1,5 +1,7 @@
-/*-files
-/backups
-/logs
-secret
 *.out
+
+/backups/
+/logs/
+/server-files/
+
+secret
