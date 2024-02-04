@@ -15,6 +15,15 @@ After starting for the first time, server configuration files are created in:
 
 Edit these files to configure the server.
 
+## Ports
+
+The server uses the following ports:
+
+- `UDP 8211` (Game)
+- `TCP 25575` (RCON)
+
+These ports are configurable in `./docker/.env`.
+
 ## Start server
 
 This script will download the server files and start the server. After starting
@@ -29,17 +38,18 @@ This script will save the world and gracefully stop the server.
 
 This script requires RCON (see below).
 
-To forcefully stop the server, attach to the server screen `screen -r palworld`
-and press `CTRL+C`.
+To forcefully stop the server, pass the `--force` flag:  
+`./script/stop-server.sh --force`
 
-## Ports
+this will stop the server without saving the world or backing up server files.
 
-The server uses the following ports:
+## Restart server
 
-- `UDP 8211` (Game)
-- `TCP 25575` (RCON)
+To restart the server:  
+`./script/stop-server.sh --restart`
 
-These ports are configurable in `./docker/.env`.
+You may schedule automatic restarts using e.g. a cron job.
+See `./script/stop-server.sh` for details.
 
 ## RCON
 
@@ -63,7 +73,7 @@ To set an RCON password, edit `./server-files/Pal/Saved/Config/LinuxServer/PalWo
 - set `RCONPort=25575` (or update `./docker/.env` to match)
 - set `AdminPassword="YourRconPassword"`
 
-then make a file `./rcon/secret` containing the same password.
+then make a file `./rcon/secret` containing the same password in plaintext.
 
 ## Backups
 
@@ -107,14 +117,6 @@ this happens, you may wish to only restore save files:
    `./script/start-server.sh`
 
 Try this if an update cuases your world or characters to reset.
-
-## Restart server
-
-To restart the server:  
-`./script/stop-server.sh --restart`
-
-You may schedule automatic restarts using e.g. a cron job. See `./script/stop-server.sh`
-for details.
 
 ## Other commands
 

@@ -55,7 +55,7 @@ done
 
 force=${force-false}
 restart=${restart-false}
-time=${time-10}
+time=${time-10} # Wait 10 seconds by default
 
 script_dir="$(cd "$(dirname "$0")" && env pwd --physical)"
 source_dir="$(readlink --canonicalize "$script_dir/..")"
