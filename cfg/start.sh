@@ -11,4 +11,9 @@ export LD_LIBRARY_PATH="${LD_LIBRARY_PATH-}:$script_dir/../linux64"
 #  dir: drwxrwxr-x
 umask 0002
 
-"$script_dir/../PalServer.sh" -useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS
+# Run in a loop unless a stop file is present
+while [ ! -f "$script_dir/stop" ]; do
+	"$script_dir/../PalServer.sh" -useperfthreads -NoAsyncLoadingThread -UseMultithreadForDS
+done
+
+rm --force "$script_dir/stop"

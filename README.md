@@ -8,12 +8,21 @@ All host scripts are tested on `Ubuntu 22.04.3 LTS`
 
 ## Configure server
 
-After starting for the first time, server configuration files are created in
+After starting for the first time, server configuration files are created in:
 
-- `./server-files/`
-- `./server-files/Pal/Saved/Config/LinuxServer/`
+- `./server-files/` (root)
+- `./server-files/Pal/Saved/Config/LinuxServer/` (configs)
 
 Edit these files to configure the server.
+
+## Ports
+
+The server uses the following ports:
+
+- `UDP 8211` (Game)
+- `TCP 25575` (RCON)
+
+These ports are configurable in `./docker/.env`.
 
 ## Start server
 
@@ -29,17 +38,18 @@ This script will save the world and gracefully stop the server.
 
 This script requires RCON (see below).
 
-To forcefully stop the server, attach to the server screen `screen -r palworld`
-and press `CTRL+C`.
+To forcefully stop the server, pass the `--force` flag:  
+`./script/stop-server.sh --force`
 
-## Ports
+this will stop the server without saving the world or backing up server files.
 
-The server uses the following ports:
+## Restart server
 
-- `UDP 8211` (Game)
-- `TCP 27015` (RCON)
+To restart the server:  
+`./script/stop-server.sh --restart`
 
-These ports are configurable in `./docker/.env`.
+You may schedule automatic restarts using e.g. a cron job.
+See `./script/stop-server.sh` for details.
 
 ## RCON
 
@@ -60,10 +70,10 @@ To use `send-rcon.sh`, you must first set an RCON password.
 To set an RCON password, edit `./server-files/Pal/Saved/Config/LinuxServer/PalWorldSettings.ini`:
 
 - set `RCONEnabled=True`
-- set `RCONPort=27015` (or update `./docker/.env` to match)
+- set `RCONPort=25575` (or update `./docker/.env` to match)
 - set `AdminPassword="YourRconPassword"`
 
-then make a file `./rcon/secret` containing the same password.
+then make a file `./rcon/secret` containing the same password in plaintext.
 
 ## Backups
 
@@ -81,6 +91,32 @@ To restore from backup, unzip the backup file you want:
 `tar -xjf ./backups/backup-timestamp.tar.bz2`
 
 Replace the files in `./server-files/Pal/Saved` with the files from the backup.
+
+## Update server
+
+To update server files, use the `--update` flag like when first
+starting the server:  
+`./script/start-server.sh --update`
+
+Palworld updates may change certain config files. When
+this happens, you may wish to only restore save files:
+
+1. Stop the server:  (`--force` if necessary)  
+   `./script/stop-server.sh`
+2. Make sure you have a backup of `./server-files/Pal/Saved`
+3. Delete `./server-files/`:  
+   `rm -rf ./server-files/`
+4. Populate the server files:  
+   `./script/start-server.sh --update-only`
+5. Restore your backup of `./server-files/Pal/Saved/SaveGames`  
+6. Take note of the server name: `./server-files/Pal/Saved/SaveGames/0/<YOUR_SERVER_NAME>`
+7. Update `./server-files/Pal/Saved/Config/LinuxServer/GameUserSettings.ini`:  
+   Set `DedicatedServerName=YOUR_SERVER_NAME`
+8. Re-set your configurations in `./server-files/Pal/Saved/Config/LinuxServer/`
+9. Start the server:
+   `./script/start-server.sh`
+
+Try this if an update cuases your world or characters to reset.
 
 ## Other commands
 

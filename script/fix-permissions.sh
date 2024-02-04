@@ -1,16 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-# This script asserts that all directories up to the mountpoint have
-# permissions for others to execute (o+x). This is necessary for users
-# to access their volume files without sudo permissions.
-
-# Additionally, it configures the server user and group, and sets
+# This script configures the server user and group, and sets
 # permissions on the server files.
 
 script_dir="$(cd "$(dirname "$0")" && env pwd --physical)"
 source_dir="$(readlink --canonicalize "$script_dir/..")"
 docker_dir="$source_dir/docker"
+server_dir="$source_dir/server-files"
 
 # shellcheck disable=SC2046
 export $(xargs <"$docker_dir/.env")
@@ -25,25 +22,6 @@ if ! sudo --non-interactive true 2>/dev/null; then
 	printf 'sudo password required to fix server file permissions.\n'
 	sudo --validate || exit
 fi
-
-IFS=/ read -ra path_parts < <("$script_dir/cd-mountpoint.sh" --path)
-path=''
-
-for part in "${path_parts[@]:1}"; do
-	path="$path/$part"
-
-	printf '\33[2K\r' # reset cursor line
-
-	if [ "$(("$(stat -c '%a' "$path")" & 001))" = 0 ]; then
-		printf 'Fixing permissions for %s... ' "$path"
-		sudo chmod o+x "$path"
-		printf 'OK'
-	else
-		printf '%s OK' "$path"
-	fi
-done
-
-printf '\n'
 
 # If there is no server group, create it.
 if [ ! "$(getent group "$server_group_name")" ]; then
@@ -63,15 +41,13 @@ if ! id --groups --name | grep --quiet --fixed-strings --word-regexp "$server_gr
 	sudo usermod -aG "$server_group_name" "$(id --user --name)"
 fi
 
-mount_dir="$("$script_dir/cd-mountpoint.sh" --path)"
-
-printf 'Setting volume permissions: '
-sudo chown --recursive "$server_user_name:$server_group_name" "$mount_dir"
-sudo find "$mount_dir" -type d -exec chmod g+w,g+s {} +
-find "$mount_dir" -maxdepth 0 -printf '%p => [%M] %u:%g\n'
-
-printf 'Setting source permissions: '
+printf 'Setting host permissions: '
 sudo chown --recursive ":$server_group_name" "$source_dir"
 sudo find "$source_dir" -type d -exec chmod g+w,g+s {} +
 sudo chmod g+x "$source_dir/cfg/start.sh"
 find "$source_dir" -maxdepth 0 -printf '%p => [%M] %u:%g\n'
+
+printf 'Setting server permissions: '
+sudo chown --recursive "$server_user_name:$server_group_name" "$server_dir"
+sudo find "$server_dir" -type d -exec chmod g+w,g+s {} +
+find "$server_dir" -maxdepth 0 -printf '%p => [%M] %u:%g\n'
