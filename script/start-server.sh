@@ -73,9 +73,9 @@ if $update_server; then
 	echo Updating server...
 	"${compose[@]}" run --rm server-files
 
-	echo Linking host files to volume...
-
 	"$script_dir/fix-permissions.sh"
+
+	echo Linking host files to volume...
 
 	mkdir --parents "$server_dir/server"
 	ln --logical --force "$source_dir/cfg/start.sh" "$server_dir/server/start.sh"
