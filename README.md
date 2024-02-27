@@ -107,8 +107,8 @@ this happens, you may wish to only restore save files:
 3. Delete `./server-files/`:  
    `rm -rf ./server-files/`
 4. Populate the server files:  
-   `./script/start-server.sh --update-only`
-5. Restore your backup of `./server-files/Pal/Saved/SaveGames`  
+   `./script/start-server.sh --update && ./script/stop-server.sh --force`
+5. Restore your backup of `./server-files/Pal/Saved/SaveGames`
 6. Take note of the server name: `./server-files/Pal/Saved/SaveGames/0/<YOUR_SERVER_NAME>`
 7. Update `./server-files/Pal/Saved/Config/LinuxServer/GameUserSettings.ini`:  
    Set `DedicatedServerName=YOUR_SERVER_NAME`

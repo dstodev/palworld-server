@@ -14,7 +14,7 @@ help() {
 		Usage: $(basename "$0") [ -u ]
 		  -h, --help    Prints this message.
 		  -u, --update  Updates the server files before starting the server.
-		  -p, --update-only  Updates the server files and exits. Implies --update.
+		  -p, --update-only  Updates the server files and exits.
 	EOF
 }
 
