@@ -120,7 +120,7 @@ Try this if an update cuases your world or characters to reset.
 
 ## Other commands
 
-- Rebuild Docker image (useful for updating server files):  
+- Rebuild Docker image:  
   `docker compose -f docker/compose.yml build --no-cache palworld-server`
 - Browse the Docker container with a bash shell:  
   `docker compose -f docker/compose.yml run --entrypoint /bin/bash palworld-server`
